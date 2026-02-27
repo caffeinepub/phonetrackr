@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Loader2, Phone, Shield, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, Phone, Shield, Zap } from "lucide-react";
+import { useState } from "react";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 export default function LoginPage() {
   const { login, loginStatus, identity, clear } = useInternetIdentity();
@@ -51,8 +51,12 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">PhoneTrackr</h1>
-              <p className="text-white/70 text-xs font-medium">Professional Tracking</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">
+                PhoneTrackr
+              </h1>
+              <p className="text-white/70 text-xs font-medium">
+                Professional Tracking
+              </p>
             </div>
           </div>
 
@@ -75,8 +79,16 @@ export default function LoginPage() {
       <div className="px-6 py-8 flex-1">
         <div className="space-y-4 mb-10">
           {[
-            { icon: Shield, label: "Secure & Private", desc: "End-to-end encrypted data" },
-            { icon: Phone, label: "Real-Time Tracking", desc: "Instant location updates" },
+            {
+              icon: Shield,
+              label: "Secure & Private",
+              desc: "End-to-end encrypted data",
+            },
+            {
+              icon: Phone,
+              label: "Real-Time Tracking",
+              desc: "Instant location updates",
+            },
             { icon: Zap, label: "Instant Alerts", desc: "Never miss an event" },
           ].map(({ icon: Icon, label, desc }) => (
             <div key={label} className="flex items-center gap-4">
@@ -135,7 +147,10 @@ export default function LoginPage() {
       <footer className="px-6 pb-8 text-center">
         <p className="text-xs text-muted-foreground">
           © 2026. Built with ❤️ using{" "}
-          <a href="https://caffeine.ai" className="text-primary hover:underline font-medium">
+          <a
+            href="https://caffeine.ai"
+            className="text-primary hover:underline font-medium"
+          >
             caffeine.ai
           </a>
         </p>

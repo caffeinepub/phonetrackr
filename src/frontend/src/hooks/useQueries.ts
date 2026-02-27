@@ -1,6 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type AdminActivityEntry,
+  type AdminNotice,
+  type AdminStats,
+  type PhoneStatus,
+  type ShoppingItem,
+  SubscriptionPlan,
+  type TrackedNumber,
+  type TrackingEvent,
+} from "../backend";
 import { useActor } from "./useActor";
-import { PhoneStatus, SubscriptionPlan, type ShoppingItem, type TrackedNumber, type TrackingEvent } from "../backend";
 
 // ─── User Profile ───────────────────────────────────────────────────────────
 
@@ -58,7 +67,10 @@ export function useAddTrackedNumber() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ phoneNumber, nickname }: { phoneNumber: string; nickname: string }) => {
+    mutationFn: async ({
+      phoneNumber,
+      nickname,
+    }: { phoneNumber: string; nickname: string }) => {
       if (!actor) throw new Error("Actor not available");
       return actor.addTrackedNumber(phoneNumber, nickname);
     },
@@ -89,7 +101,10 @@ export function useUpdateNumberStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ numberId, status }: { numberId: bigint; status: PhoneStatus }) => {
+    mutationFn: async ({
+      numberId,
+      status,
+    }: { numberId: bigint; status: PhoneStatus }) => {
       if (!actor) throw new Error("Actor not available");
       return actor.updateNumberStatus(numberId, status);
     },
@@ -179,7 +194,11 @@ export function useCreateCheckoutSession() {
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
       const successUrl = `${baseUrl}/payment-success`;
       const cancelUrl = `${baseUrl}/payment-failure`;
-      const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
+      const result = await actor.createCheckoutSession(
+        items,
+        successUrl,
+        cancelUrl,
+      );
       const session = JSON.parse(result) as CheckoutSession;
       if (!session?.url) {
         throw new Error("Stripe session missing url");
@@ -198,5 +217,82 @@ export function useIsStripeConfigured() {
       return actor.isStripeConfigured();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isCallerAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAdminStats() {
+  const { actor, isFetching } = useActor();
+  return useQuery<AdminStats>({
+    queryKey: ["adminStats"],
+    queryFn: async () => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.getAdminStats();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAllActivity(limit: bigint) {
+  const { actor, isFetching } = useActor();
+  return useQuery<AdminActivityEntry[]>({
+    queryKey: ["adminActivity", limit.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllActivity(limit);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAllTrackedNumbers() {
+  const { actor, isFetching } = useActor();
+  return useQuery<TrackedNumber[]>({
+    queryKey: ["adminTrackedNumbers"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllTrackedNumbers();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAdminNotice() {
+  const { actor, isFetching } = useActor();
+  return useQuery<AdminNotice | null>({
+    queryKey: ["adminNotice"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getAdminNotice();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSetAdminNotice() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (message: string) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.setAdminNotice(message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminNotice"] });
+    },
   });
 }

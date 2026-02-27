@@ -1,13 +1,13 @@
-import { Check, Zap, Star, Crown, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, Check, Crown, Loader2, Star, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { SubscriptionPlan, type ShoppingItem } from "../backend";
+import { type ShoppingItem, SubscriptionPlan } from "../backend";
 import {
-  useGetSubscriptionPlan,
-  useSetSubscriptionPlan,
   useCreateCheckoutSession,
+  useGetSubscriptionPlan,
   useIsStripeConfigured,
+  useSetSubscriptionPlan,
 } from "../hooks/useQueries";
 
 const PLANS = [
@@ -68,7 +68,8 @@ const PLANS = [
 ] as const;
 
 export default function PaymentPage() {
-  const { data: currentPlan, isLoading: planLoading } = useGetSubscriptionPlan();
+  const { data: currentPlan, isLoading: planLoading } =
+    useGetSubscriptionPlan();
   const { data: stripeConfigured } = useIsStripeConfigured();
   const setSubscriptionPlan = useSetSubscriptionPlan();
   const createCheckoutSession = useCreateCheckoutSession();
@@ -114,7 +115,8 @@ export default function PaymentPage() {
     }
   };
 
-  const isProcessing = setSubscriptionPlan.isPending || createCheckoutSession.isPending;
+  const isProcessing =
+    setSubscriptionPlan.isPending || createCheckoutSession.isPending;
 
   return (
     <div className="animate-slide-up">
@@ -133,7 +135,9 @@ export default function PaymentPage() {
             )}
           </div>
           <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Current Plan</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              Current Plan
+            </p>
             {planLoading ? (
               <Skeleton className="h-5 w-20 mt-0.5" />
             ) : (
@@ -155,18 +159,23 @@ export default function PaymentPage() {
         <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-700">
-            Paid plans require Stripe configuration. Contact an admin to enable payments.
+            Paid plans require Stripe configuration. Contact an admin to enable
+            payments.
           </p>
         </div>
       )}
 
       {/* Plan Cards */}
       <div className="mx-4 mt-4 mb-4 space-y-3">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Choose a Plan</h3>
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+          Choose a Plan
+        </h3>
 
         {PLANS.map((plan) => {
           const Icon = plan.icon;
-          const isCurrent = currentPlan === plan.id || (!currentPlan && plan.id === SubscriptionPlan.basic);
+          const isCurrent =
+            currentPlan === plan.id ||
+            (!currentPlan && plan.id === SubscriptionPlan.basic);
           const isHighlighted = "highlighted" in plan && plan.highlighted;
 
           return (
@@ -189,18 +198,26 @@ export default function PaymentPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${plan.bgColor} flex items-center justify-center`}>
+                    <div
+                      className={`w-10 h-10 rounded-xl ${plan.bgColor} flex items-center justify-center`}
+                    >
                       <Icon className={`w-5 h-5 ${plan.color}`} />
                     </div>
                     <div>
                       <p className="font-bold text-foreground">{plan.name}</p>
-                      <p className="text-xs text-muted-foreground">{plan.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {plan.description}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-2xl font-bold text-foreground">
+                      {plan.price}
+                    </span>
                     {plan.period && (
-                      <span className="text-xs text-muted-foreground">{plan.period}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {plan.period}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -221,7 +238,9 @@ export default function PaymentPage() {
                 {isCurrent ? (
                   <div className="w-full h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center gap-2">
                     <Check className="w-4 h-4 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Current Plan</span>
+                    <span className="text-sm font-semibold text-emerald-700">
+                      Current Plan
+                    </span>
                   </div>
                 ) : (
                   <Button
@@ -231,7 +250,10 @@ export default function PaymentPage() {
                     className={`w-full h-9 text-sm font-semibold ${isHighlighted ? "shadow-red" : ""}`}
                   >
                     {isProcessing && createCheckoutSession.isPending ? (
-                      <><Loader2 className="mr-2 w-4 h-4 animate-spin" /> Processing...</>
+                      <>
+                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />{" "}
+                        Processing...
+                      </>
                     ) : (
                       `Select ${plan.name}`
                     )}
@@ -247,7 +269,10 @@ export default function PaymentPage() {
       <footer className="px-4 pb-6 text-center">
         <p className="text-xs text-muted-foreground">
           © 2026. Built with ❤️ using{" "}
-          <a href="https://caffeine.ai" className="text-primary hover:underline font-medium">
+          <a
+            href="https://caffeine.ai"
+            className="text-primary hover:underline font-medium"
+          >
             caffeine.ai
           </a>
         </p>

@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -10,6 +10,19 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AdminActivityEntry {
+  'id' : bigint,
+  'action' : string,
+  'user' : Principal,
+  'timestamp' : bigint,
+  'phoneNumber' : string,
+}
+export interface AdminNotice { 'updatedAt' : bigint, 'message' : string }
+export interface AdminStats {
+  'totalTracks' : bigint,
+  'totalEvents' : bigint,
+  'totalUsers' : bigint,
+}
 export type PhoneStatus = { 'active' : null } |
   { 'pending' : null } |
   { 'inactive' : null };
@@ -75,6 +88,11 @@ export interface _SERVICE {
     [Array<ShoppingItem>, string, string],
     string
   >,
+  'getAdminNotice' : ActorMethod<[], [] | [AdminNotice]>,
+  'getAdminStats' : ActorMethod<[], AdminStats>,
+  'getAllActivity' : ActorMethod<[bigint], Array<AdminActivityEntry>>,
+  'getAllTrackedNumbers' : ActorMethod<[], Array<TrackedNumber>>,
+  'getAllUsers' : ActorMethod<[], Array<Principal>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getFullHistory' : ActorMethod<[], Array<TrackingEvent>>,
@@ -87,6 +105,7 @@ export interface _SERVICE {
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'removeTrackedNumber' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setAdminNotice' : ActorMethod<[string], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'setSubscriptionPlan' : ActorMethod<[SubscriptionPlan], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,

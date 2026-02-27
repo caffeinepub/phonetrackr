@@ -1,8 +1,24 @@
-import { useMemo } from "react";
-import { Phone, Clock, ChevronRight, MapPin, PhoneOff, WifiOff, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Activity,
+  Bell,
+  ChevronRight,
+  Clock,
+  MapPin,
+  Phone,
+  PhoneOff,
+  Settings,
+  WifiOff,
+  X,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
-import { useGetTrackedNumbers, useGetFullHistory } from "../hooks/useQueries";
+import {
+  useGetAdminNotice,
+  useGetFullHistory,
+  useGetTrackedNumbers,
+  useIsCallerAdmin,
+} from "../hooks/useQueries";
 
 function timeAgo(timestamp: bigint): string {
   const now = Date.now();
@@ -31,14 +47,29 @@ function isToday(timestamp: bigint): boolean {
 
 function EventTypeBadge({ type }: { type: string }) {
   const lower = type.toLowerCase();
-  if (lower === "located") return <span className="badge-located text-xs font-medium px-2 py-0.5 rounded-full">Located</span>;
-  if (lower === "missed") return <span className="badge-missed text-xs font-medium px-2 py-0.5 rounded-full">Missed</span>;
-  return <span className="badge-offline text-xs font-medium px-2 py-0.5 rounded-full">Offline</span>;
+  if (lower === "located")
+    return (
+      <span className="badge-located text-xs font-medium px-2 py-0.5 rounded-full">
+        Located
+      </span>
+    );
+  if (lower === "missed")
+    return (
+      <span className="badge-missed text-xs font-medium px-2 py-0.5 rounded-full">
+        Missed
+      </span>
+    );
+  return (
+    <span className="badge-offline text-xs font-medium px-2 py-0.5 rounded-full">
+      Offline
+    </span>
+  );
 }
 
 function EventTypeIcon({ type }: { type: string }) {
   const lower = type.toLowerCase();
-  if (lower === "located") return <MapPin className="w-4 h-4 text-emerald-600" />;
+  if (lower === "located")
+    return <MapPin className="w-4 h-4 text-emerald-600" />;
   if (lower === "missed") return <PhoneOff className="w-4 h-4 text-red-600" />;
   return <WifiOff className="w-4 h-4 text-gray-500" />;
 }
@@ -49,12 +80,18 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { identity } = useInternetIdentity();
-  const { data: trackedNumbers, isLoading: numbersLoading } = useGetTrackedNumbers();
+  const { data: trackedNumbers, isLoading: numbersLoading } =
+    useGetTrackedNumbers();
   const { data: history, isLoading: historyLoading } = useGetFullHistory();
+  const { data: adminNotice } = useGetAdminNotice();
+  const { data: isAdmin } = useIsCallerAdmin();
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+
+  const showNotice = !noticeDismissed && !!adminNotice && !!adminNotice.message;
 
   const todayCount = useMemo(
     () => history?.filter((e) => isToday(e.timestamp)).length ?? 0,
-    [history]
+    [history],
   );
 
   const recentActivity = useMemo(
@@ -62,11 +99,11 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       [...(history ?? [])]
         .sort((a, b) => Number(b.timestamp - a.timestamp))
         .slice(0, 5),
-    [history]
+    [history],
   );
 
   const principalStr = identity?.getPrincipal().toString() ?? "";
-  const shortId = principalStr ? principalStr.slice(0, 8) + "..." : "User";
+  const shortId = principalStr ? `${principalStr.slice(0, 8)}...` : "User";
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -76,14 +113,59 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   return (
     <div className="animate-slide-up">
+      {/* Admin Notice Banner */}
+      {showNotice && (
+        <div className="mx-4 mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 flex items-start gap-3 animate-fade-in">
+          <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+            <Bell className="w-3.5 h-3.5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800 mb-0.5">
+              Notice
+            </p>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              {adminNotice?.message}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNoticeDismissed(true)}
+            className="w-6 h-6 rounded flex items-center justify-center hover:bg-amber-100 transition-colors shrink-0"
+          >
+            <X className="w-3 h-3 text-amber-500" />
+          </button>
+        </div>
+      )}
+
+      {/* Admin Button (only for admins) */}
+      {isAdmin && (
+        <div className="mx-4 mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              window.history.pushState({}, "", "/admin");
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-primary/30 hover:bg-primary-light bg-card shadow-sm"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Admin Panel
+          </button>
+        </div>
+      )}
+
       {/* Welcome Card */}
-      <div className="mx-4 mt-4 rounded-2xl gradient-red p-5 relative overflow-hidden">
+      <div
+        className={`mx-4 ${showNotice || isAdmin ? "mt-3" : "mt-4"} rounded-2xl gradient-red p-5 relative overflow-hidden`}
+      >
         <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10" />
         <div className="absolute bottom-2 right-8 w-16 h-16 rounded-full bg-white/10" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
             <Activity className="w-4 h-4 text-white/80" />
-            <span className="text-white/80 text-xs font-medium uppercase tracking-wider">Welcome back</span>
+            <span className="text-white/80 text-xs font-medium uppercase tracking-wider">
+              Welcome back
+            </span>
           </div>
           <h2 className="text-xl font-bold text-white leading-tight mb-1">
             Hello, {shortId}
@@ -99,12 +181,16 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
               <Phone className="w-4 h-4 text-primary" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Tracked</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Tracked
+            </span>
           </div>
           {numbersLoading ? (
             <Skeleton className="h-8 w-12" />
           ) : (
-            <p className="text-3xl font-bold text-foreground">{trackedNumbers?.length ?? 0}</p>
+            <p className="text-3xl font-bold text-foreground">
+              {trackedNumbers?.length ?? 0}
+            </p>
           )}
           <p className="text-xs text-muted-foreground mt-0.5">Numbers</p>
         </div>
@@ -114,7 +200,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
               <Clock className="w-4 h-4 text-primary" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Today</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Today
+            </span>
           </div>
           {historyLoading ? (
             <Skeleton className="h-8 w-12" />
@@ -148,7 +236,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       {/* Recent Activity */}
       <div className="mx-4 mt-5 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Recent Activity</h3>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+            Recent Activity
+          </h3>
           <button
             type="button"
             onClick={() => onNavigate("history")}
@@ -161,7 +251,10 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         {historyLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-card rounded-xl p-4 border border-border">
+              <div
+                key={i}
+                className="bg-card rounded-xl p-4 border border-border"
+              >
                 <Skeleton className="h-4 w-3/4 mb-2" />
                 <Skeleton className="h-3 w-1/2" />
               </div>
@@ -172,7 +265,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
               <Activity className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground">No activity yet</p>
+            <p className="text-sm font-medium text-foreground">
+              No activity yet
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               Add a number to start tracking
             </p>
@@ -196,9 +291,13 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                       <EventTypeBadge type={event.eventType} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-muted-foreground truncate">{event.location}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {event.location}
+                      </p>
                       <span className="text-muted-foreground">·</span>
-                      <p className="text-xs text-muted-foreground shrink-0">{timeAgo(event.timestamp)}</p>
+                      <p className="text-xs text-muted-foreground shrink-0">
+                        {timeAgo(event.timestamp)}
+                      </p>
                     </div>
                   </div>
                 </div>

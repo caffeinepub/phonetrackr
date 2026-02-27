@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -20,6 +20,35 @@ export const ShoppingItem = IDL.Record({
   'priceInCents' : IDL.Nat,
   'productDescription' : IDL.Text,
 });
+export const AdminNotice = IDL.Record({
+  'updatedAt' : IDL.Int,
+  'message' : IDL.Text,
+});
+export const AdminStats = IDL.Record({
+  'totalTracks' : IDL.Nat,
+  'totalEvents' : IDL.Nat,
+  'totalUsers' : IDL.Nat,
+});
+export const AdminActivityEntry = IDL.Record({
+  'id' : IDL.Nat,
+  'action' : IDL.Text,
+  'user' : IDL.Principal,
+  'timestamp' : IDL.Int,
+  'phoneNumber' : IDL.Text,
+});
+export const PhoneStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'pending' : IDL.Null,
+  'inactive' : IDL.Null,
+});
+export const TrackedNumber = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : PhoneStatus,
+  'nickname' : IDL.Text,
+  'user' : IDL.Principal,
+  'phoneNumber' : IDL.Text,
+  'dateAdded' : IDL.Int,
+});
 export const SubscriptionPlan = IDL.Variant({
   'pro' : IDL.Null,
   'premium' : IDL.Null,
@@ -40,19 +69,6 @@ export const StripeSessionStatus = IDL.Variant({
     'response' : IDL.Text,
   }),
   'failed' : IDL.Record({ 'error' : IDL.Text }),
-});
-export const PhoneStatus = IDL.Variant({
-  'active' : IDL.Null,
-  'pending' : IDL.Null,
-  'inactive' : IDL.Null,
-});
-export const TrackedNumber = IDL.Record({
-  'id' : IDL.Nat,
-  'status' : PhoneStatus,
-  'nickname' : IDL.Text,
-  'user' : IDL.Principal,
-  'phoneNumber' : IDL.Text,
-  'dateAdded' : IDL.Int,
 });
 export const StripeConfiguration = IDL.Record({
   'allowedCountries' : IDL.Vec(IDL.Text),
@@ -87,6 +103,15 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'getAdminNotice' : IDL.Func([], [IDL.Opt(AdminNotice)], ['query']),
+  'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
+  'getAllActivity' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(AdminActivityEntry)],
+      ['query'],
+    ),
+  'getAllTrackedNumbers' : IDL.Func([], [IDL.Vec(TrackedNumber)], ['query']),
+  'getAllUsers' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getFullHistory' : IDL.Func([], [IDL.Vec(TrackingEvent)], ['query']),
@@ -103,6 +128,7 @@ export const idlService = IDL.Service({
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'removeTrackedNumber' : IDL.Func([IDL.Nat], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setAdminNotice' : IDL.Func([IDL.Text], [], []),
   'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
   'setSubscriptionPlan' : IDL.Func([SubscriptionPlan], [], []),
   'transform' : IDL.Func(
@@ -128,6 +154,35 @@ export const idlFactory = ({ IDL }) => {
     'priceInCents' : IDL.Nat,
     'productDescription' : IDL.Text,
   });
+  const AdminNotice = IDL.Record({
+    'updatedAt' : IDL.Int,
+    'message' : IDL.Text,
+  });
+  const AdminStats = IDL.Record({
+    'totalTracks' : IDL.Nat,
+    'totalEvents' : IDL.Nat,
+    'totalUsers' : IDL.Nat,
+  });
+  const AdminActivityEntry = IDL.Record({
+    'id' : IDL.Nat,
+    'action' : IDL.Text,
+    'user' : IDL.Principal,
+    'timestamp' : IDL.Int,
+    'phoneNumber' : IDL.Text,
+  });
+  const PhoneStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'pending' : IDL.Null,
+    'inactive' : IDL.Null,
+  });
+  const TrackedNumber = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : PhoneStatus,
+    'nickname' : IDL.Text,
+    'user' : IDL.Principal,
+    'phoneNumber' : IDL.Text,
+    'dateAdded' : IDL.Int,
+  });
   const SubscriptionPlan = IDL.Variant({
     'pro' : IDL.Null,
     'premium' : IDL.Null,
@@ -148,19 +203,6 @@ export const idlFactory = ({ IDL }) => {
       'response' : IDL.Text,
     }),
     'failed' : IDL.Record({ 'error' : IDL.Text }),
-  });
-  const PhoneStatus = IDL.Variant({
-    'active' : IDL.Null,
-    'pending' : IDL.Null,
-    'inactive' : IDL.Null,
-  });
-  const TrackedNumber = IDL.Record({
-    'id' : IDL.Nat,
-    'status' : PhoneStatus,
-    'nickname' : IDL.Text,
-    'user' : IDL.Principal,
-    'phoneNumber' : IDL.Text,
-    'dateAdded' : IDL.Int,
   });
   const StripeConfiguration = IDL.Record({
     'allowedCountries' : IDL.Vec(IDL.Text),
@@ -192,6 +234,15 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
+    'getAdminNotice' : IDL.Func([], [IDL.Opt(AdminNotice)], ['query']),
+    'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
+    'getAllActivity' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(AdminActivityEntry)],
+        ['query'],
+      ),
+    'getAllTrackedNumbers' : IDL.Func([], [IDL.Vec(TrackedNumber)], ['query']),
+    'getAllUsers' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getFullHistory' : IDL.Func([], [IDL.Vec(TrackingEvent)], ['query']),
@@ -212,6 +263,7 @@ export const idlFactory = ({ IDL }) => {
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'removeTrackedNumber' : IDL.Func([IDL.Nat], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setAdminNotice' : IDL.Func([IDL.Text], [], []),
     'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
     'setSubscriptionPlan' : IDL.Func([SubscriptionPlan], [], []),
     'transform' : IDL.Func(

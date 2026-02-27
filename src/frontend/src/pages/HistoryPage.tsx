@@ -1,170 +1,293 @@
-import { useState, useMemo } from "react";
-import { MapPin, PhoneOff, WifiOff, Clock, Filter } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useGetFullHistory, useGetTrackedNumbers } from "../hooks/useQueries";
+import { Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing } from "lucide-react";
+import { useMemo } from "react";
+import { useGetTrackedNumbers } from "../hooks/useQueries";
 
-function formatTimestamp(timestamp: bigint): string {
-  const ms = Number(timestamp / BigInt(1_000_000));
-  return new Date(ms).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+type CallType = "incoming" | "outgoing" | "missed";
+
+interface CallEntry {
+  id: string;
+  callType: CallType;
+  number: string;
+  duration: string;
+  timestamp: Date;
+}
+
+interface StaticCallDef {
+  id: string;
+  callType: CallType;
+  number: string;
+  duration: string;
+  hoursAgo: number;
+}
+
+// Static fake call entries using varied Tanzanian numbers
+const STATIC_CALLS: StaticCallDef[] = [
+  {
+    id: "s1",
+    callType: "incoming",
+    number: "+255615037284",
+    duration: "2:13",
+    hoursAgo: 1,
+  },
+  {
+    id: "s2",
+    callType: "outgoing",
+    number: "+255743081956",
+    duration: "0:52",
+    hoursAgo: 2,
+  },
+  {
+    id: "s3",
+    callType: "missed",
+    number: "+255682530917",
+    duration: "0:00",
+    hoursAgo: 3,
+  },
+  {
+    id: "s4",
+    callType: "outgoing",
+    number: "+255758306142",
+    duration: "5:01",
+    hoursAgo: 5,
+  },
+  {
+    id: "s5",
+    callType: "incoming",
+    number: "+255671049823",
+    duration: "1:44",
+    hoursAgo: 9,
+  },
+  {
+    id: "s6",
+    callType: "missed",
+    number: "+255774038261",
+    duration: "0:00",
+    hoursAgo: 12,
+  },
+  {
+    id: "s7",
+    callType: "incoming",
+    number: "+255624891306",
+    duration: "3:22",
+    hoursAgo: 26,
+  },
+  {
+    id: "s8",
+    callType: "outgoing",
+    number: "+255762495038",
+    duration: "4:18",
+    hoursAgo: 30,
+  },
+  {
+    id: "s9",
+    callType: "incoming",
+    number: "+255651274908",
+    duration: "0:47",
+    hoursAgo: 48,
+  },
+  {
+    id: "s10",
+    callType: "missed",
+    number: "+255714290863",
+    duration: "0:00",
+    hoursAgo: 51,
+  },
+  {
+    id: "s11",
+    callType: "outgoing",
+    number: "+255783620495",
+    duration: "6:14",
+    hoursAgo: 72,
+  },
+  {
+    id: "s12",
+    callType: "incoming",
+    number: "+255788301462",
+    duration: "2:55",
+    hoursAgo: 96,
+  },
+];
+
+function buildCallsFromStatic(
+  trackedNumbers?: { phoneNumber: string }[],
+): CallEntry[] {
+  const now = new Date();
+  const base: CallEntry[] = STATIC_CALLS.map((c: StaticCallDef) => ({
+    id: c.id,
+    callType: c.callType,
+    number: c.number,
+    duration: c.duration,
+    timestamp: new Date(now.getTime() - c.hoursAgo * 60 * 60 * 1000),
+  }));
+
+  // Mix in tracked numbers if any
+  if (trackedNumbers && trackedNumbers.length > 0) {
+    const types: CallType[] = ["incoming", "outgoing", "missed"];
+    const extraDurations = ["1:12", "3:05", "0:00", "2:41", "0:29"];
+    const extraOffsets = [7, 18, 38, 60, 90];
+
+    trackedNumbers.slice(0, 3).forEach((n, i) => {
+      const callType = types[i % 3];
+      base.push({
+        id: `tracked-${i}`,
+        callType,
+        number: n.phoneNumber,
+        duration:
+          callType === "missed"
+            ? "0:00"
+            : extraDurations[i % extraDurations.length],
+        timestamp: new Date(
+          now.getTime() -
+            extraOffsets[i % extraOffsets.length] * 60 * 60 * 1000,
+        ),
+      });
+    });
+  }
+
+  return base.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+}
+
+function getDateLabel(date: Date): string {
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfYesterday = new Date(
+    startOfToday.getTime() - 24 * 60 * 60 * 1000,
+  );
+  const entryDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  if (entryDay.getTime() === startOfToday.getTime()) return "Today";
+  if (entryDay.getTime() === startOfYesterday.getTime()) return "Yesterday";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
 }
 
-function EventTypeIcon({ type }: { type: string }) {
-  const lower = type.toLowerCase();
-  if (lower === "located") {
+function CallIcon({ callType }: { callType: CallType }) {
+  if (callType === "incoming") {
     return (
-      <div className="w-9 h-9 rounded-xl badge-located flex items-center justify-center shrink-0">
-        <MapPin className="w-4 h-4" />
+      <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+        <PhoneIncoming className="w-4 h-4 text-green-600" />
       </div>
     );
   }
-  if (lower === "missed") {
+  if (callType === "outgoing") {
     return (
-      <div className="w-9 h-9 rounded-xl badge-missed flex items-center justify-center shrink-0">
-        <PhoneOff className="w-4 h-4" />
+      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+        <PhoneOutgoing className="w-4 h-4 text-blue-600" />
       </div>
     );
   }
   return (
-    <div className="w-9 h-9 rounded-xl badge-inactive flex items-center justify-center shrink-0">
-      <WifiOff className="w-4 h-4" />
+    <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+      <PhoneMissed className="w-4 h-4 text-red-500" />
     </div>
   );
 }
 
-function EventTypeBadge({ type }: { type: string }) {
-  const lower = type.toLowerCase();
-  if (lower === "located") return <span className="badge-located text-xs font-medium px-2 py-0.5 rounded-full capitalize">{type}</span>;
-  if (lower === "missed") return <span className="badge-missed text-xs font-medium px-2 py-0.5 rounded-full capitalize">{type}</span>;
-  return <span className="badge-offline text-xs font-medium px-2 py-0.5 rounded-full capitalize">{type}</span>;
-}
-
 export default function HistoryPage() {
-  const [filterNumber, setFilterNumber] = useState<string>("all");
-  const { data: history, isLoading: historyLoading } = useGetFullHistory();
   const { data: trackedNumbers } = useGetTrackedNumbers();
 
-  const filteredHistory = useMemo(() => {
-    const sorted = [...(history ?? [])].sort((a, b) => Number(b.timestamp - a.timestamp));
-    if (filterNumber === "all") return sorted;
-    return sorted.filter((e) => e.phoneNumber === filterNumber);
-  }, [history, filterNumber]);
+  const allCalls = useMemo(
+    () => buildCallsFromStatic(trackedNumbers),
+    [trackedNumbers],
+  );
 
-  // Build a map of phone number -> nickname
-  const nicknameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    trackedNumbers?.forEach((n) => {
-      if (n.nickname) map.set(n.phoneNumber, n.nickname);
-    });
-    return map;
-  }, [trackedNumbers]);
+  // Group calls by date label
+  const grouped = useMemo(() => {
+    const groups: { label: string; calls: CallEntry[] }[] = [];
+    const labelMap = new Map<string, CallEntry[]>();
+
+    for (const call of allCalls) {
+      const label = getDateLabel(call.timestamp);
+      if (!labelMap.has(label)) {
+        labelMap.set(label, []);
+        groups.push({ label, calls: labelMap.get(label)! });
+      }
+      labelMap.get(label)!.push(call);
+    }
+
+    return groups;
+  }, [allCalls]);
 
   return (
     <div className="animate-slide-up">
-      {/* Filter Bar */}
-      <div className="mx-4 mt-4">
-        <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-3">
-          <div className="w-7 h-7 rounded-lg bg-primary-light flex items-center justify-center shrink-0">
-            <Filter className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <Select value={filterNumber} onValueChange={setFilterNumber}>
-            <SelectTrigger className="h-8 text-sm flex-1 border-0 shadow-none bg-transparent focus:ring-0">
-              <SelectValue placeholder="Filter by number" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Numbers</SelectItem>
-              {trackedNumbers?.map((n) => (
-                <SelectItem key={n.id.toString()} value={n.phoneNumber}>
-                  {n.nickname ? `${n.nickname} (${n.phoneNumber})` : n.phoneNumber}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Header */}
+      <div className="mx-4 mt-4 mb-2 flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-primary-light flex items-center justify-center">
+          <Phone className="w-3.5 h-3.5 text-primary" />
         </div>
+        <h2 className="text-base font-bold text-foreground">Calls</h2>
+        <span className="ml-auto text-xs text-muted-foreground font-medium">
+          {allCalls.length} records
+        </span>
       </div>
 
-      {/* Event Count */}
-      <div className="mx-4 mt-3 mb-3">
-        <p className="text-xs text-muted-foreground font-medium">
-          {historyLoading ? "Loading..." : `${filteredHistory.length} events`}
-        </p>
-      </div>
-
-      {/* History List */}
-      <div className="mx-4 mb-4 space-y-2">
-        {historyLoading ? (
-          <>
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-4">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-9 h-9 rounded-xl" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-40 mb-2" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </>
-        ) : filteredHistory.length === 0 ? (
-          <div className="bg-card rounded-2xl border border-border p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary-light flex items-center justify-center mx-auto mb-3">
-              <Clock className="w-7 h-7 text-primary" />
+      {/* Grouped call list */}
+      <div className="mx-4 mb-6 space-y-4">
+        {grouped.map((group) => (
+          <div key={group.label}>
+            {/* Date section header */}
+            <div className="mb-1 px-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </span>
             </div>
-            <p className="font-semibold text-foreground">No events found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {filterNumber !== "all"
-                ? "No events for this number"
-                : "Start tracking to see history"}
-            </p>
-          </div>
-        ) : (
-          filteredHistory.map((event, idx) => (
-            <div
-              key={event.id.toString()}
-              className="bg-card rounded-xl border border-border p-4 shadow-xs animate-fade-in"
-              style={{ animationDelay: `${Math.min(idx * 30, 150)}ms` }}
-            >
-              <div className="flex items-start gap-3">
-                <EventTypeIcon type={event.eventType} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground mono truncate">{event.phoneNumber}</p>
-                      {nicknameMap.get(event.phoneNumber) && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {nicknameMap.get(event.phoneNumber)}
-                        </p>
+
+            {/* Calls in this group */}
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs">
+              {group.calls.map((call, idx) => (
+                <div
+                  key={call.id}
+                  className={`flex items-center gap-3 px-4 py-3 ${
+                    idx !== group.calls.length - 1
+                      ? "border-b border-border"
+                      : ""
+                  }`}
+                >
+                  <CallIcon callType={call.callType} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground mono truncate">
+                      {call.number}
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      {call.callType === "missed" ? (
+                        <span className="text-red-500 font-medium">
+                          Missed Call
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground capitalize">
+                          {call.callType}
+                        </span>
                       )}
-                    </div>
-                    <EventTypeBadge type={event.eventType} />
+                    </p>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <p className="text-xs text-muted-foreground truncate">{event.location}</p>
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <p className="text-xs text-muted-foreground">{formatTimestamp(event.timestamp)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-semibold text-foreground mono">
+                      {call.duration}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {formatTime(call.timestamp)}
+                    </p>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );

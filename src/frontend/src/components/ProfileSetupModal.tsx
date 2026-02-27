@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2, User } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { SubscriptionPlan } from "../backend";
 import { useSaveCallerUserProfile } from "../hooks/useQueries";
@@ -11,7 +11,9 @@ interface ProfileSetupModalProps {
   onComplete: () => void;
 }
 
-export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps) {
+export default function ProfileSetupModal({
+  onComplete,
+}: ProfileSetupModalProps) {
   const [name, setName] = useState("");
   const saveProfile = useSaveCallerUserProfile();
 
@@ -35,7 +37,9 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
         <div className="w-14 h-14 rounded-2xl gradient-red flex items-center justify-center mx-auto mb-4">
           <User className="w-7 h-7 text-white" />
         </div>
-        <h2 className="text-xl font-bold text-center text-foreground mb-1">Welcome to PhoneTrackr!</h2>
+        <h2 className="text-xl font-bold text-center text-foreground mb-1">
+          Welcome to PhoneTrackr!
+        </h2>
         <p className="text-sm text-center text-muted-foreground mb-6">
           Set up your profile to get started
         </p>
@@ -58,7 +62,9 @@ export default function ProfileSetupModal({ onComplete }: ProfileSetupModalProps
             className="w-full h-11 font-semibold shadow-red"
           >
             {saveProfile.isPending ? (
-              <><Loader2 className="mr-2 w-4 h-4 animate-spin" /> Saving...</>
+              <>
+                <Loader2 className="mr-2 w-4 h-4 animate-spin" /> Saving...
+              </>
             ) : (
               "Get Started"
             )}

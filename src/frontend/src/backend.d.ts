@@ -7,11 +7,6 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface http_request_result {
-    status: bigint;
-    body: Uint8Array;
-    headers: Array<http_header>;
-}
 export interface TransformationOutput {
     status: bigint;
     body: Uint8Array;
@@ -25,6 +20,22 @@ export interface TrackingEvent {
     location: string;
     eventType: string;
 }
+export interface http_header {
+    value: string;
+    name: string;
+}
+export interface http_request_result {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface ShoppingItem {
+    productName: string;
+    currency: string;
+    quantity: bigint;
+    priceInCents: bigint;
+    productDescription: string;
+}
 export interface TrackedNumber {
     id: bigint;
     status: PhoneStatus;
@@ -33,16 +44,18 @@ export interface TrackedNumber {
     phoneNumber: string;
     dateAdded: bigint;
 }
+export interface AdminStats {
+    totalTracks: bigint;
+    totalEvents: bigint;
+    totalUsers: bigint;
+}
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
 }
-export interface ShoppingItem {
-    productName: string;
-    currency: string;
-    quantity: bigint;
-    priceInCents: bigint;
-    productDescription: string;
+export interface AdminNotice {
+    updatedAt: bigint;
+    message: string;
 }
 export type StripeSessionStatus = {
     __kind__: "completed";
@@ -63,9 +76,12 @@ export interface StripeConfiguration {
 export interface UserProfile {
     plan: SubscriptionPlan;
 }
-export interface http_header {
-    value: string;
-    name: string;
+export interface AdminActivityEntry {
+    id: bigint;
+    action: string;
+    user: Principal;
+    timestamp: bigint;
+    phoneNumber: string;
 }
 export enum PhoneStatus {
     active = "active",
@@ -87,6 +103,11 @@ export interface backendInterface {
     addTrackingEvent(numberId: bigint, location: string, eventType: string): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
+    getAdminNotice(): Promise<AdminNotice | null>;
+    getAdminStats(): Promise<AdminStats>;
+    getAllActivity(limit: bigint): Promise<Array<AdminActivityEntry>>;
+    getAllTrackedNumbers(): Promise<Array<TrackedNumber>>;
+    getAllUsers(): Promise<Array<Principal>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getFullHistory(): Promise<Array<TrackingEvent>>;
@@ -99,6 +120,7 @@ export interface backendInterface {
     isStripeConfigured(): Promise<boolean>;
     removeTrackedNumber(numberId: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setAdminNotice(message: string): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     setSubscriptionPlan(plan: SubscriptionPlan): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;

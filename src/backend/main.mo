@@ -5,6 +5,8 @@ import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Int "mo:core/Int";
 import Time "mo:core/Time";
+import Iter "mo:core/Iter";
+import Nat "mo:core/Nat";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import OutCall "http-outcalls/outcall";
@@ -33,16 +35,35 @@ actor {
     eventType : Text;
   };
 
-  public type UserProfile = {
-    plan : SubscriptionPlan;
+  public type UserProfile = { plan : SubscriptionPlan };
+
+  public type AdminNotice = { message : Text; updatedAt : Int };
+
+  public type AdminActivityEntry = {
+    id : Nat;
+    user : Principal;
+    phoneNumber : Text;
+    timestamp : Int;
+    action : Text;
+  };
+
+  public type AdminStats = {
+    totalUsers : Nat;
+    totalTracks : Nat;
+    totalEvents : Nat;
   };
 
   // State
   let trackedNumbers = Map.empty<Principal, Map.Map<Nat, TrackedNumber>>();
   let trackingHistory = Map.empty<Principal, Map.Map<Nat, TrackingEvent>>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let activityLog = Map.empty<Nat, AdminActivityEntry>();
+
   var nextNumberId = 1;
   var nextEventId = 1;
+  var nextActivityId = 1;
+  var adminNotice : ?AdminNotice = null;
+
   var stripeConfig : ?Stripe.StripeConfiguration = null;
 
   // Authorization
@@ -61,10 +82,28 @@ actor {
     };
   };
 
+  module AdminActivityEntry {
+    public func compare(a : AdminActivityEntry, b : AdminActivityEntry) : Order.Order {
+      Int.compare(b.timestamp, a.timestamp);
+    };
+  };
+
+  // Admin Notice Functions
+  public shared ({ caller }) func setAdminNotice(message : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set admin notices");
+    };
+    adminNotice := ?{ message; updatedAt = Time.now() };
+  };
+
+  public query ({ caller }) func getAdminNotice() : async ?AdminNotice {
+    adminNotice;
+  };
+
   // Profile Management Functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.get(caller);
   };
@@ -152,6 +191,16 @@ actor {
       status = #pending;
     };
 
+    let activityEntry = {
+      id = nextActivityId;
+      user = caller;
+      phoneNumber;
+      timestamp = Time.now();
+      action = "track";
+    };
+    activityLog.add(nextActivityId, activityEntry);
+    nextActivityId += 1;
+
     let userNumbers = getTrackedNumbersHelper(caller);
     userNumbers.add(nextNumberId, newNumber);
     if (not trackedNumbers.containsKey(caller)) {
@@ -217,6 +266,16 @@ actor {
       location;
       eventType;
     };
+
+    let activityEntry = {
+      id = nextActivityId;
+      user = caller;
+      phoneNumber = number.phoneNumber;
+      timestamp = Time.now();
+      action = "event";
+    };
+    activityLog.add(nextActivityId, activityEntry);
+    nextActivityId += 1;
 
     let userEvents = getTrackingEventsHelper(caller);
     userEvents.add(nextEventId, newEvent);
@@ -302,5 +361,70 @@ actor {
 
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
     await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
+  };
+
+  // Admin Dashboard Functions
+  public query ({ caller }) func getAdminStats() : async AdminStats {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access stats");
+    };
+
+    let totalUsers = userProfiles.size();
+    var totalTracks = 0;
+    var totalEvents = 0;
+
+    for ((_, userNumbers) in trackedNumbers.entries()) {
+      totalTracks += userNumbers.size();
+    };
+
+    for ((_, userEvents) in trackingHistory.entries()) {
+      totalEvents += userEvents.size();
+    };
+
+    {
+      totalUsers;
+      totalTracks;
+      totalEvents;
+    };
+  };
+
+  public query ({ caller }) func getAllTrackedNumbers() : async [TrackedNumber] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access all tracked numbers");
+    };
+
+    let allTrackedNumbersIter = trackedNumbers.entries();
+    let allTrackedNumbersArray = allTrackedNumbersIter.toArray();
+    let resultArray = allTrackedNumbersArray.foldLeft(
+      Array.empty<TrackedNumber>(),
+      func(acc, entry) {
+        let (principal, numberMap) = entry;
+        let valuesArray = numberMap.values().toArray();
+        acc.concat(valuesArray);
+      },
+    );
+    resultArray;
+  };
+
+  func getAllActivityIter() : Iter.Iter<AdminActivityEntry> {
+    activityLog.values();
+  };
+
+  public query ({ caller }) func getAllActivity(limit : Nat) : async [AdminActivityEntry] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access all activity");
+    };
+
+    let sorted = getAllActivityIter().toArray().sort();
+    let limited = Iter.fromArray(sorted).take(limit);
+    limited.toArray();
+  };
+
+  public query ({ caller }) func getAllUsers() : async [Principal] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access all users");
+    };
+
+    userProfiles.keys().toArray();
   };
 };
