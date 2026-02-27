@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* PhoneTrackr: Clean red & white with sharp precision */
+    --background: 0.99 0 0;
+    --foreground: 0.15 0.01 20;
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.01 20;
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.01 20;
+
+    /* Primary: bold crimson red */
+    --primary: 0.53 0.22 27;
+    --primary-foreground: 1 0 0;
+    --primary-hover: 0.47 0.20 27;
+    --primary-light: 0.95 0.04 27;
+
+    /* Secondary: crisp light gray */
+    --secondary: 0.96 0 0;
+    --secondary-foreground: 0.25 0.01 20;
+
+    --muted: 0.96 0 0;
+    --muted-foreground: 0.52 0.01 20;
+
+    --accent: 0.95 0.04 27;
+    --accent-foreground: 0.47 0.20 27;
+
+    --destructive: 0.53 0.22 27;
+    --destructive-foreground: 1 0 0;
+
+    --border: 0.91 0.005 20;
+    --input: 0.91 0.005 20;
+    --ring: 0.53 0.22 27;
+
+    /* Status colors */
+    --success: 0.58 0.13 145;
+    --warning: 0.72 0.14 75;
+    --info: 0.55 0.15 240;
+
+    /* Chart */
+    --chart-1: 0.53 0.22 27;
+    --chart-2: 0.65 0.15 145;
+    --chart-3: 0.55 0.15 240;
+    --chart-4: 0.72 0.14 75;
+    --chart-5: 0.60 0.18 300;
+
+    /* Sidebar */
+    --sidebar: 1 0 0;
+    --sidebar-foreground: 0.15 0.01 20;
+    --sidebar-primary: 0.53 0.22 27;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.96 0 0;
+    --sidebar-accent-foreground: 0.25 0.01 20;
+    --sidebar-border: 0.91 0.005 20;
+    --sidebar-ring: 0.53 0.22 27;
+
+    /* App shell */
+    --app-bg: 0.96 0.005 20;
+    --nav-height: 4rem;
+    --header-height: 3.5rem;
+  }
+
+  .dark {
+    --background: 0.12 0.01 20;
+    --foreground: 0.97 0 0;
+    --card: 0.17 0.01 20;
+    --card-foreground: 0.97 0 0;
+    --popover: 0.20 0.01 20;
+    --popover-foreground: 0.97 0 0;
+    --primary: 0.58 0.22 27;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.22 0.01 20;
+    --secondary-foreground: 0.85 0 0;
+    --muted: 0.22 0.01 20;
+    --muted-foreground: 0.60 0.01 20;
+    --accent: 0.28 0.08 27;
+    --accent-foreground: 0.85 0 0;
+    --destructive: 0.58 0.22 27;
+    --destructive-foreground: 1 0 0;
+    --border: 0.25 0.01 20;
+    --input: 0.25 0.01 20;
+    --ring: 0.58 0.22 27;
+    --sidebar: 0.17 0.01 20;
+    --sidebar-foreground: 0.97 0 0;
+    --sidebar-primary: 0.58 0.22 27;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.22 0.01 20;
+    --sidebar-accent-foreground: 0.85 0 0;
+    --sidebar-border: 0.25 0.01 20;
+    --sidebar-ring: 0.58 0.22 27;
+    --app-bg: 0.10 0.01 20;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .app-shell {
+    background-color: oklch(var(--app-bg));
+    min-height: 100dvh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .phone-frame {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100dvh;
+    background-color: oklch(var(--background));
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 0 1px oklch(var(--border)), 0 32px 64px -12px rgba(0,0,0,0.15);
+  }
+
+  .page-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: calc(var(--nav-height) + 0.5rem);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-content-auth {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bottom-nav {
+    position: sticky;
+    bottom: 0;
+    height: var(--nav-height);
+    background-color: oklch(var(--card));
+    border-top: 1px solid oklch(var(--border));
+    z-index: 50;
+    flex-shrink: 0;
+  }
+
+  .gradient-red {
+    background: linear-gradient(135deg, oklch(0.53 0.22 27) 0%, oklch(0.45 0.20 15) 100%);
+  }
+
+  .gradient-red-light {
+    background: linear-gradient(135deg, oklch(0.97 0.03 27) 0%, oklch(0.95 0.02 30) 100%);
+  }
+
+  .mono {
+    font-family: 'DM Mono', monospace;
+  }
+
+  .badge-active {
+    background-color: oklch(0.93 0.05 145);
+    color: oklch(0.42 0.14 145);
+  }
+
+  .badge-pending {
+    background-color: oklch(0.96 0.05 75);
+    color: oklch(0.52 0.14 75);
+  }
+
+  .badge-inactive {
+    background-color: oklch(0.93 0 0);
+    color: oklch(0.45 0.01 20);
+  }
+
+  .badge-located {
+    background-color: oklch(0.93 0.05 145);
+    color: oklch(0.42 0.14 145);
+  }
+
+  .badge-missed {
+    background-color: oklch(0.95 0.04 27);
+    color: oklch(0.53 0.22 27);
+  }
+
+  .badge-offline {
+    background-color: oklch(0.93 0 0);
+    color: oklch(0.45 0.01 20);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 4px 20px -4px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+  }
+}
