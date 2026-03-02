@@ -27,14 +27,12 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useGetAdminNotice,
   useGetAdminStats,
   useGetAllActivity,
   useGetAllTrackedNumbers,
-  useIsCallerAdmin,
   useSetAdminNotice,
 } from "../hooks/useQueries";
 
@@ -48,7 +46,6 @@ function truncatePrincipal(principal: { toString: () => string }): string {
 }
 
 export default function AdminDashboard() {
-  const { actor } = useActor();
   const { clear, identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
@@ -56,7 +53,6 @@ export default function AdminDashboard() {
   const [noticeSaved, setNoticeSaved] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  const { data: isAdmin, isLoading: adminCheckLoading } = useIsCallerAdmin();
   const {
     data: stats,
     isLoading: statsLoading,
@@ -117,75 +113,6 @@ export default function AdminDashboard() {
     queryClient.clear();
     handleBackToApp();
   };
-
-  // Loading state
-  if (adminCheckLoading || !actor) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl gradient-red flex items-center justify-center">
-            <Shield className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm font-medium">
-              Checking admin access...
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Access denied
-  if (!identity) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-sm px-6">
-          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-            <Shield className="w-8 h-8 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground">
-            Authentication Required
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Please log in to access the admin dashboard.
-          </p>
-          <Button
-            onClick={handleBackToApp}
-            variant="outline"
-            className="w-full gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to App
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isAdmin === false) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-sm px-6">
-          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-            <Shield className="w-8 h-8 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
-          <p className="text-muted-foreground text-sm">
-            You don't have permission to view this page. Admin privileges are
-            required.
-          </p>
-          <Button
-            onClick={handleBackToApp}
-            variant="outline"
-            className="w-full gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to App
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
